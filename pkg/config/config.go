@@ -7,18 +7,56 @@
  *
  */
 
-package main
+package config
 
 import (
-	"common"
 	"fmt"
 	"strings"
 
 	ini "github.com/dlintw/goconf"
 )
 
-func parseDumperConfig(file string) (*common.Args, error) {
-	args := &common.Args{
+// Args tuple.
+type Args struct {
+	User                 string
+	Password             string
+	Address              string
+	ToUser               string
+	ToPassword           string
+	ToAddress            string
+	ToDatabase           string
+	ToEngine             string
+	Database             string
+	DatabaseRegexp       string
+	DatabaseInvertRegexp bool
+	Table                string
+	Outdir               string
+	SessionVars          string
+	Threads              int
+	ChunksizeInMB        int
+	StmtSize             int
+	Allbytes             uint64
+	Allrows              uint64
+	OverwriteTables      bool
+	Wheres               map[string]string
+	Selects              map[string]map[string]string
+	Filters              map[string]map[string]string
+
+	// Interval in millisecond.
+	IntervalMs int
+
+	// Type of storage. Default: Local
+	StorageType string
+
+	// Minio Config
+	MinioEndpoint  string
+	MinioAccessKey string
+	MinioSecretKey string
+	MinioBucket    string
+}
+
+func ParseDumperConfig(file string) (*Args, error) {
+	args := &Args{
 		Wheres: make(map[string]string, 0),
 	}
 

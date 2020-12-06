@@ -10,11 +10,12 @@
 package main
 
 import (
-	"common"
 	"flag"
 	"fmt"
 	"os"
 
+	"github.com/harryge00/go-mydumper/pkg/common"
+	"github.com/harryge00/go-mydumper/pkg/config"
 	"github.com/xelabs/go-mysqlstack/xlog"
 )
 
@@ -42,7 +43,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	args, err := parseDumperConfig(flagConfig)
+	args, err := config.ParseDumperConfig(flagConfig)
 	common.AssertNil(err)
 
 	if _, err := os.Stat(args.Outdir); os.IsNotExist(err) {

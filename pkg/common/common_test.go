@@ -10,33 +10,10 @@
 package common
 
 import (
-	"os"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
 )
-
-func TestWriteReadFile(t *testing.T) {
-	file := "/tmp/xx.txt"
-	defer os.Remove(file)
-
-	{
-		err := WriteFile(file, "fake")
-		assert.Nil(t, err)
-	}
-
-	{
-		got, err := ReadFile(file)
-		assert.Nil(t, err)
-		want := []byte("fake")
-		assert.Equal(t, want, got)
-	}
-
-	{
-		err := WriteFile("/xxu01/xx.txt", "fake")
-		assert.NotNil(t, err)
-	}
-}
 
 func TestEscapeBytes(t *testing.T) {
 	tests := []struct {

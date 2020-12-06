@@ -11,6 +11,8 @@ package common
 
 import (
 	"fmt"
+	"github.com/harryge00/go-mydumper/pkg/config"
+	"github.com/harryge00/go-mydumper/pkg/storage"
 	"regexp"
 	"strings"
 	"sync"
@@ -21,32 +23,35 @@ import (
 	"github.com/xelabs/go-mysqlstack/xlog"
 )
 
-func writeMetaData(args *Args) {
+// writer writes file to external storage.
+var writer storage.ExternalStorage
+
+func writeMetaData(args *config.Args) {
 	file := fmt.Sprintf("%s/metadata", args.Outdir)
-	WriteFile(file, "")
+	writer.WriteFile(file, "")
 }
 
-func dumpDatabaseSchema(log *xlog.Log, conn *Connection, args *Args, database string) {
+func dumpDatabaseSchema(log *xlog.Log, conn *Connection, args *config.Args, database string) {
 	err := conn.Execute(fmt.Sprintf("USE `%s`", database))
 	AssertNil(err)
 
 	schema := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s`;", database)
 	file := fmt.Sprintf("%s/%s-schema-create.sql", args.Outdir, database)
-	WriteFile(file, schema)
+	writer.WriteFile(file, schema)
 	log.Info("dumping.database[%s].schema...", database)
 }
 
-func dumpTableSchema(log *xlog.Log, conn *Connection, args *Args, database string, table string) {
+func dumpTableSchema(log *xlog.Log, conn *Connection, args *config.Args, database string, table string) {
 	qr, err := conn.Fetch(fmt.Sprintf("SHOW CREATE TABLE `%s`.`%s`", database, table))
 	AssertNil(err)
 	schema := qr.Rows[0][1].String() + ";\n"
 
 	file := fmt.Sprintf("%s/%s.%s-schema.sql", args.Outdir, database, table)
-	WriteFile(file, schema)
+	writer.WriteFile(file, schema)
 	log.Info("dumping.table[%s.%s].schema...", database, table)
 }
 
-func dumpTable(log *xlog.Log, conn *Connection, args *Args, database string, table string) {
+func dumpTable(log *xlog.Log, conn *Connection, args *config.Args, database string, table string) {
 	var allBytes uint64
 	var allRows uint64
 	var where string
@@ -126,7 +131,7 @@ func dumpTable(log *xlog.Log, conn *Connection, args *Args, database string, tab
 		if (chunkbytes / 1024 / 1024) >= args.ChunksizeInMB {
 			query := strings.Join(inserts, ";\n") + ";\n"
 			file := fmt.Sprintf("%s/%s.%s.%05d.sql", args.Outdir, database, table, fileNo)
-			WriteFile(file, query)
+			writer.WriteFile(file, query)
 
 			log.Info("dumping.table[%s.%s].rows[%v].bytes[%vMB].part[%v].thread[%d]", database, table, allRows, (allBytes / 1024 / 1024), fileNo, conn.ID)
 			inserts = inserts[:0]
@@ -142,7 +147,7 @@ func dumpTable(log *xlog.Log, conn *Connection, args *Args, database string, tab
 
 		query := strings.Join(inserts, ";\n") + ";\n"
 		file := fmt.Sprintf("%s/%s.%s.%05d.sql", args.Outdir, database, table, fileNo)
-		WriteFile(file, query)
+		writer.WriteFile(file, query)
 	}
 	err = cursor.Close()
 	AssertNil(err)
@@ -186,7 +191,8 @@ func filterDatabases(log *xlog.Log, conn *Connection, filter *regexp.Regexp, inv
 }
 
 // Dumper used to start the dumper worker.
-func Dumper(log *xlog.Log, args *Args) {
+func Dumper(log *xlog.Log, args *config.Args) {
+	writer = &storage.LocalStorage{}
 	pool, err := NewPool(log, args.Threads, args.Address, args.User, args.Password, args.SessionVars)
 	AssertNil(err)
 	defer pool.Close()
