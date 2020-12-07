@@ -1,30 +1,44 @@
-[![Github Actions Status](https://github.com/xelabs/go-mydumper/workflows/mydumper%20Build/badge.svg?event=push)](https://github.com/xelabs/go-mydumper/actions?query=workflow%3A%22mydumper+Build%22+event%3Apush)
-[![Github Actions Status](https://github.com/xelabs/go-mydumper/workflows/mydumper%20Test/badge.svg?event=push)](https://github.com/xelabs/go-mydumper/actions?query=workflow%3A%22mydumper+Test%22+event%3Apush)
-[![Github Actions Status](https://github.com/xelabs/go-mydumper/workflows/mydumper%20Coverage/badge.svg?event=push)](https://github.com/xelabs/go-mydumper/actions?query=workflow%3A%22mydumper+Coverage%22+event%3Apush)
-[![Go Report Card](https://goreportcard.com/badge/github.com/xelabs/go-mydumper)](https://goreportcard.com/report/github.com/xelabs/go-mydumper) [![codecov.io](https://codecov.io/gh/xelabs/go-mydumper/graphs/badge.svg)](https://codecov.io/gh/xelabs/go-mydumper/branch/master)
-
 # go-mydumper
 
-***go-mydumper*** is a multi-threaded MySQL backup and restore tool, and it is compatible with [maxbube/mydumper](https://github.com/maxbube/mydumper) in the layout.
+## 思路
+第一个想法是直接管道一下，然后上传s3：
+```
+mydumper -h xxx -p xxx| mc pipe s3/backup/xxx
+```
+然而发现mydumper只能写到磁盘，而且是开了多个线程同时去写到不同文件，所以没办法直接管道stdout。
+
+继而尝试给 [maxbube/mydumper](github.com/maxbube/mydumper/) 加直接上传minio的接口，发现minio并没有C/C++的SDK啊。。。 
+于是转而修改go版本mydumper代码。添加了支持minio存储的部分 [pkg/storage](./pkg/storage)。
 
 
-## Build
+## 构建
 
 ```
-$git clone https://github.com/xelabs/go-mydumper
+$git clone https://github.com/harryge00/go-mydumper
 $cd go-mydumper
 $make build
 $./bin/mydumper   -h
 $./bin/myloader   -h
 ```
 
-## Test
-
+## 配置说明
+使用minio存储的配置部分如下：
 ```
-$make test
+[storage]
+storagetype = minio
+endpoint = play.minio.io:9000
+accesskey = Q3AM3UQ867SPQQA43P2F
+secretkey = zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG
+bucket = test-backup
+useSSL = true
 ```
-
-## Usage
+| 配置参数        | 说明           | 类型 |
+| ------------- |:-------------:| -----:|
+| storagetype      | 存储类型, `local` 或者`minio`. 默认为 `local`| 字符串 |
+| endpoint      | minio地址 | 字符串 |
+| accesskey      | minio 登录用户名| 字符串 |
+| secretkey      | minio 登录密码| 字符串 |
+| useSSL      | 是否使用SSL| 布尔 |
 
 ### mydumper
 
