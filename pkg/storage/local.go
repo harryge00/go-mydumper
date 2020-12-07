@@ -1,6 +1,7 @@
 package storage
 
 import (
+	"fmt"
 	"github.com/xelabs/go-mysqlstack/sqlparser/depends/common"
 	"io"
 	"io/ioutil"
@@ -11,15 +12,17 @@ import (
 //
 // export for using in tests.
 type LocalStorage struct {
+	base string
 }
 
 // Write file to local file system.
 func (l *LocalStorage) WriteFile(name string, data string) error {
+	filename := fmt.Sprintf("%s/%s", l.base, name)
 	flag := os.O_RDWR | os.O_TRUNC
-	if _, err := os.Stat(name); os.IsNotExist(err) {
+	if _, err := os.Stat(filename); os.IsNotExist(err) {
 		flag |= os.O_CREATE
 	}
-	f, err := os.OpenFile(name, flag, 0644)
+	f, err := os.OpenFile(filename, flag, 0644)
 	if err != nil {
 		return err
 	}
@@ -36,9 +39,17 @@ func (l *LocalStorage) WriteFile(name string, data string) error {
 }
 
 func (l *LocalStorage) ReadFile(name string) ([]byte, error) {
-	return ioutil.ReadFile(name)
+	filename := fmt.Sprintf("%s/%s", l.base, name)
+	return ioutil.ReadFile(filename)
 }
 
-func NewLocalStorage() *LocalStorage {
-	return &LocalStorage{}
+func NewLocalStorage(base string) (*LocalStorage, error) {
+	// Create directory if not exist
+	if _, err := os.Stat(base); os.IsNotExist(err) {
+		err := os.MkdirAll(base, 0777)
+		if err != nil {
+			return nil, err
+		}
+	}
+	return &LocalStorage{base: base}, nil
 }

@@ -6,9 +6,9 @@ port = 3306
 # Username with privileges to run the dump
 user = root
 # User password
-password = pwd
+password = 123456
 # Database to dump
-database = xx
+database = test
 # Directory to dump files to
 outdir = ./dumper-sql
 # Split tables into chunks of this output file size. This value is in MB
@@ -43,3 +43,11 @@ vars= ""
 # Use this to ignore the column to dump.
 [filter]
 # table1.column1 = ignore
+
+[storage]
+storagetype = minio
+endpoint = play.minio.io:9000
+accesskey = Q3AM3UQ867SPQQA43P2F
+secretkey = zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG
+bucket = test-backup
+useSSL = true

@@ -10,6 +10,7 @@
 package common
 
 import (
+	"github.com/harryge00/go-mydumper/pkg/config"
 	"testing"
 
 	"github.com/stretchr/testify/assert"
@@ -36,7 +37,7 @@ func TestLoader(t *testing.T) {
 		fakedbs.AddQueryPattern("set foreign_key_checks=.*", &sqltypes.Result{})
 	}
 
-	args := &Args{
+	args := &config.Args{
 		Outdir:          "/tmp/dumpertest",
 		User:            "mock",
 		Password:        "mock",
@@ -44,6 +45,7 @@ func TestLoader(t *testing.T) {
 		Address:         address,
 		IntervalMs:      500,
 		OverwriteTables: true,
+		StorageType:     config.LocaltorageType,
 	}
 	// Loader.
 	{

@@ -10,7 +10,10 @@
 package common
 
 import (
+	"context"
 	"fmt"
+	"github.com/harryge00/go-mydumper/pkg/config"
+	"github.com/harryge00/go-mydumper/pkg/storage"
 	"math/rand"
 	"os"
 	"path/filepath"
@@ -35,6 +38,8 @@ var (
 	schemaSuffix = "-schema.sql"
 	tableSuffix  = ".sql"
 )
+
+var reader storage.ExternalStorage
 
 func loadFiles(log *xlog.Log, dir string) *Files {
 	files := &Files{}
@@ -67,7 +72,7 @@ func restoreDatabaseSchema(log *xlog.Log, dbs []string, conn *Connection) {
 		base := filepath.Base(db)
 		name := strings.TrimSuffix(base, dbSuffix)
 
-		data, err := ReadFile(db)
+		data, err := reader.ReadFile(db)
 		AssertNil(err)
 		sql := common.BytesToString(data)
 
@@ -94,7 +99,7 @@ func restoreTableSchema(log *xlog.Log, overwrite bool, tables []string, conn *Co
 		err = conn.Execute("SET FOREIGN_KEY_CHECKS=0")
 		AssertNil(err)
 
-		data, err := ReadFile(table)
+		data, err := reader.ReadFile(table)
 		AssertNil(err)
 		query1 := common.BytesToString(data)
 		querys := strings.Split(query1, ";\n")
@@ -133,7 +138,7 @@ func restoreTable(log *xlog.Log, table string, conn *Connection) int {
 	err = conn.Execute("SET FOREIGN_KEY_CHECKS=0")
 	AssertNil(err)
 
-	data, err := ReadFile(table)
+	data, err := reader.ReadFile(table)
 	AssertNil(err)
 	query1 := common.BytesToString(data)
 	querys := strings.Split(query1, ";\n")
@@ -149,10 +154,31 @@ func restoreTable(log *xlog.Log, table string, conn *Connection) int {
 }
 
 // Loader used to start the loader worker.
-func Loader(log *xlog.Log, args *Args) {
+func Loader(log *xlog.Log, args *config.Args) {
 	pool, err := NewPool(log, args.Threads, args.Address, args.User, args.Password, args.SessionVars)
 	AssertNil(err)
 	defer pool.Close()
+
+	// Decide storage type:
+	switch args.StorageType {
+	case config.LocaltorageType:
+		reader, err = storage.NewLocalStorage(args.Outdir)
+		if err != nil {
+			log.Panicf("Failed to initialize local storage: %v", err)
+		}
+	case config.MinioStorageType:
+		reader, err = storage.NewMinioStorage(context.Background(), args.MinioEndpoint, args.MinioBucket,
+			args.MinioAccessKey, args.MinioSecretKey, args.UseSSL)
+		if err != nil {
+			log.Panicf("Failed to initialize minio storage: %v", err)
+		}
+	default:
+		// use local storage as default
+		reader, err = storage.NewLocalStorage(args.Outdir)
+		if err != nil {
+			log.Panicf("Failed to initialize local storage: %v", err)
+		}
+	}
 
 	files := loadFiles(log, args.Outdir)
 

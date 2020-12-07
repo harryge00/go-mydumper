@@ -38,6 +38,7 @@ func (m *MinioStorage) ReadFile(name string) ([]byte, error) {
 	return res, err
 }
 
+// TODO: check validity of arguments.
 func NewMinioStorage(ctx context.Context, endpoint, bucket, accessKey, secretKey string, useSSL bool) (*MinioStorage, error) {
 	options := &minio.Options{
 		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),

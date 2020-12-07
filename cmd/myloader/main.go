@@ -12,6 +12,7 @@ package main
 import (
 	"flag"
 	"fmt"
+	"github.com/harryge00/go-mydumper/pkg/config"
 	"os"
 
 	"github.com/harryge00/go-mydumper/pkg/common"
@@ -50,7 +51,7 @@ func main() {
 		os.Exit(0)
 	}
 
-	args := &common.Args{
+	args := &config.Args{
 		User:            flagUser,
 		Password:        flagPasswd,
 		Address:         fmt.Sprintf("%s:%d", flagHost, flagPort),

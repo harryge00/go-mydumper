@@ -7,15 +7,19 @@ import (
 
 // Test validates `WriteFile` and 'ReadFile'.
 func TestLocalReadWriteFile(t *testing.T) {
-	s := NewLocalStorage()
-	tmpfile, _ := ioutil.TempFile("", "localtestfile")
+	tmpdir, _ := ioutil.TempDir("", "dumper-sql")
+	s, err := NewLocalStorage(tmpdir)
+	if err != nil {
+		t.Errorf("Failed to initialize local storage: %v", err)
+	}
+	fileName := "localtestfile"
 	expectedContent := "Hello, mydumper."
-	err := s.WriteFile(tmpfile.Name(), expectedContent)
+	err = s.WriteFile(fileName, expectedContent)
 	if err != nil {
 		t.Errorf("WriteFile failed: %v", err)
 	}
 
-	bytes, err := s.ReadFile(tmpfile.Name())
+	bytes, err := s.ReadFile(fileName)
 	if err != nil {
 		t.Errorf("ReadFile failed: %v", err)
 	}

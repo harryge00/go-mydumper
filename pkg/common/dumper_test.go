@@ -10,6 +10,7 @@
 package common
 
 import (
+	"github.com/harryge00/go-mydumper/pkg/config"
 	"io/ioutil"
 	"os"
 	"strings"
@@ -114,7 +115,7 @@ func TestDumper(t *testing.T) {
 		fakedbs.AddQueryPattern("set .*", &sqltypes.Result{})
 	}
 
-	args := &Args{
+	args := &config.Args{
 		Database:      "test",
 		Outdir:        "/tmp/dumpertest",
 		User:          "mock",
@@ -269,7 +270,7 @@ func TestDumperAll(t *testing.T) {
 		fakedbs.AddQueryPattern("set .*", &sqltypes.Result{})
 	}
 
-	args := &Args{
+	args := &config.Args{
 		Outdir:        "/tmp/dumpertest",
 		User:          "mock",
 		Password:      "mock",
@@ -427,7 +428,7 @@ func TestDumperMultiple(t *testing.T) {
 		fakedbs.AddQueryPattern("set .*", &sqltypes.Result{})
 	}
 
-	args := &Args{
+	args := &config.Args{
 		Database:      "test1,test2",
 		Outdir:        "/tmp/dumpertest",
 		User:          "mock",
@@ -595,7 +596,7 @@ func TestDumperSimpleRegexp(t *testing.T) {
 		fakedbs.AddQueryPattern("set .*", &sqltypes.Result{})
 	}
 
-	args := &Args{
+	args := &config.Args{
 		DatabaseRegexp: "(test1|test2)",
 		Outdir:         "/tmp/dumpertest",
 		User:           "mock",
@@ -763,7 +764,7 @@ func TestDumperComplexRegexp(t *testing.T) {
 		fakedbs.AddQueryPattern("set .*", &sqltypes.Result{})
 	}
 
-	args := &Args{
+	args := &config.Args{
 		DatabaseRegexp: "^[ets]+?[0-2]$",
 		Outdir:         "/tmp/dumpertest",
 		User:           "mock",
@@ -934,7 +935,7 @@ func TestDumperInvertMatch(t *testing.T) {
 		fakedbs.AddQueryPattern("set .*", &sqltypes.Result{})
 	}
 
-	args := &Args{
+	args := &config.Args{
 		DatabaseRegexp:       "^(mysql|sys|information_schema|performance_schema)$",
 		DatabaseInvertRegexp: true,
 		Outdir:               "/tmp/dumpertest",

@@ -46,10 +46,5 @@ func main() {
 	args, err := config.ParseDumperConfig(flagConfig)
 	common.AssertNil(err)
 
-	if _, err := os.Stat(args.Outdir); os.IsNotExist(err) {
-		x := os.MkdirAll(args.Outdir, 0777)
-		common.AssertNil(x)
-	}
-
 	common.Dumper(log, args)
 }

@@ -16,6 +16,11 @@ import (
 	ini "github.com/dlintw/goconf"
 )
 
+const (
+	MinioStorageType = "minio"
+	LocaltorageType  = "local"
+)
+
 // Args tuple.
 type Args struct {
 	User                 string
@@ -53,6 +58,7 @@ type Args struct {
 	MinioAccessKey string
 	MinioSecretKey string
 	MinioBucket    string
+	UseSSL         bool
 }
 
 func ParseDumperConfig(file string) (*Args, error) {
@@ -147,6 +153,19 @@ func ParseDumperConfig(file string) (*Args, error) {
 		if args.Filters[table][column], err = cfg.GetString("filter", tblcol); err != nil {
 			return nil, err
 		}
+	}
+
+	storageType, _ := cfg.GetString("storage", "storagetype")
+	if storageType == "" {
+		args.StorageType = LocaltorageType
+	}
+	args.StorageType = storageType
+	if args.StorageType == MinioStorageType {
+		args.MinioEndpoint, _ = cfg.GetString("storage", "endpoint")
+		args.MinioAccessKey, _ = cfg.GetString("storage", "accesskey")
+		args.MinioSecretKey, _ = cfg.GetString("storage", "secretkey")
+		args.MinioBucket, _ = cfg.GetString("storage", "bucket")
+		args.UseSSL, _ = cfg.GetBool("storage", "useSSL")
 	}
 
 	args.Address = fmt.Sprintf("%s:%d", host, port)

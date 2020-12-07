@@ -10,6 +10,7 @@
 package common
 
 import (
+	"context"
 	"fmt"
 	"github.com/harryge00/go-mydumper/pkg/config"
 	"github.com/harryge00/go-mydumper/pkg/storage"
@@ -26,29 +27,30 @@ import (
 // writer writes file to external storage.
 var writer storage.ExternalStorage
 
-func writeMetaData(args *config.Args) {
-	file := fmt.Sprintf("%s/metadata", args.Outdir)
-	writer.WriteFile(file, "")
+func writeMetaData(args *config.Args) error {
+	return writer.WriteFile("metadata", "")
 }
 
-func dumpDatabaseSchema(log *xlog.Log, conn *Connection, args *config.Args, database string) {
+func dumpDatabaseSchema(log *xlog.Log, conn *Connection, args *config.Args, database string) error {
 	err := conn.Execute(fmt.Sprintf("USE `%s`", database))
 	AssertNil(err)
 
 	schema := fmt.Sprintf("CREATE DATABASE IF NOT EXISTS `%s`;", database)
-	file := fmt.Sprintf("%s/%s-schema-create.sql", args.Outdir, database)
-	writer.WriteFile(file, schema)
+	file := fmt.Sprintf("%s-schema-create.sql", database)
+	err = writer.WriteFile(file, schema)
 	log.Info("dumping.database[%s].schema...", database)
+	return err
 }
 
-func dumpTableSchema(log *xlog.Log, conn *Connection, args *config.Args, database string, table string) {
+func dumpTableSchema(log *xlog.Log, conn *Connection, args *config.Args, database string, table string) error {
 	qr, err := conn.Fetch(fmt.Sprintf("SHOW CREATE TABLE `%s`.`%s`", database, table))
 	AssertNil(err)
 	schema := qr.Rows[0][1].String() + ";\n"
 
-	file := fmt.Sprintf("%s/%s.%s-schema.sql", args.Outdir, database, table)
-	writer.WriteFile(file, schema)
+	file := fmt.Sprintf("%s.%s-schema.sql", database, table)
+	err = writer.WriteFile(file, schema)
 	log.Info("dumping.table[%s.%s].schema...", database, table)
+	return err
 }
 
 func dumpTable(log *xlog.Log, conn *Connection, args *config.Args, database string, table string) {
@@ -130,7 +132,7 @@ func dumpTable(log *xlog.Log, conn *Connection, args *config.Args, database stri
 
 		if (chunkbytes / 1024 / 1024) >= args.ChunksizeInMB {
 			query := strings.Join(inserts, ";\n") + ";\n"
-			file := fmt.Sprintf("%s/%s.%s.%05d.sql", args.Outdir, database, table, fileNo)
+			file := fmt.Sprintf("%s.%s.%05d.sql", database, table, fileNo)
 			writer.WriteFile(file, query)
 
 			log.Info("dumping.table[%s.%s].rows[%v].bytes[%vMB].part[%v].thread[%d]", database, table, allRows, (allBytes / 1024 / 1024), fileNo, conn.ID)
@@ -146,7 +148,7 @@ func dumpTable(log *xlog.Log, conn *Connection, args *config.Args, database stri
 		}
 
 		query := strings.Join(inserts, ";\n") + ";\n"
-		file := fmt.Sprintf("%s/%s.%s.%05d.sql", args.Outdir, database, table, fileNo)
+		file := fmt.Sprintf("%s.%s.%05d.sql", database, table, fileNo)
 		writer.WriteFile(file, query)
 	}
 	err = cursor.Close()
@@ -192,14 +194,39 @@ func filterDatabases(log *xlog.Log, conn *Connection, filter *regexp.Regexp, inv
 
 // Dumper used to start the dumper worker.
 func Dumper(log *xlog.Log, args *config.Args) {
-	writer = &storage.LocalStorage{}
+	var err error
+	// Decide storage type:
+	switch args.StorageType {
+	case config.LocaltorageType:
+		writer, err = storage.NewLocalStorage(args.Outdir)
+		if err != nil {
+			log.Panicf("Failed to initialize local storage: %v", err)
+		}
+	case config.MinioStorageType:
+		var err error
+		writer, err = storage.NewMinioStorage(context.Background(), args.MinioEndpoint, args.MinioBucket,
+			args.MinioAccessKey, args.MinioSecretKey, args.UseSSL)
+		log.Info("Minio config: %v %v %v %v", args.MinioBucket, args.MinioEndpoint, args.MinioAccessKey, args.UseSSL)
+		if err != nil {
+			log.Panicf("Failed to initialize minio storage: %v", err)
+		}
+	default:
+		// use local storage as default
+		writer, err = storage.NewLocalStorage(args.Outdir)
+		if err != nil {
+			log.Panicf("Failed to initialize local storage: %v", err)
+		}
+	}
+
 	pool, err := NewPool(log, args.Threads, args.Address, args.User, args.Password, args.SessionVars)
 	AssertNil(err)
 	defer pool.Close()
 
 	// Meta data.
-	writeMetaData(args)
-
+	err = writeMetaData(args)
+	if err != nil {
+		log.Error("Failed to writeMetaData: %v", err)
+	}
 	// database.
 	var wg sync.WaitGroup
 	conn := pool.Get()
@@ -216,7 +243,10 @@ func Dumper(log *xlog.Log, args *config.Args) {
 		}
 	}
 	for _, database := range databases {
-		dumpDatabaseSchema(log, conn, args, database)
+		err = dumpDatabaseSchema(log, conn, args, database)
+		if err != nil {
+			log.Error("Failed to dumpDatabaseSchema: %v", err)
+		}
 	}
 
 	// tables.
