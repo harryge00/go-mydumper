@@ -28,10 +28,10 @@ test:
 	@$(MAKE) testcommon
 
 testcommon:
-	go test -race -v common
+	go test -race -v pkg/common/*
 
 # code coverage
-COVPKGS =	common
+COVPKGS =	pkg/common/*
 coverage:
 	@$(MAKE) gettest
 	go build -v -o bin/gotestcover \

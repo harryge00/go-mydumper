@@ -32,6 +32,8 @@ github.com/mitchellh/go-homedir
 github.com/modern-go/concurrent
 # github.com/modern-go/reflect2 v1.0.1
 github.com/modern-go/reflect2
+# github.com/pierrre/gotestcover v0.0.0-20160517101806-924dca7d15f0
+## explicit
 # github.com/pmezard/go-difflib v1.0.0
 github.com/pmezard/go-difflib/difflib
 # github.com/rs/xid v1.2.1
