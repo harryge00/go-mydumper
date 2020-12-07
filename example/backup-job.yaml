@@ -1,0 +1,21 @@
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: mysql-backup
+spec:
+  template:
+    spec:
+      containers:
+      - name: mydumper
+        image: hyge/mydumper
+        command: ["mydumper",  "-c", "/conf/mydumper.ini"]
+        volumeMounts:
+        - mountPath: /conf/
+          name: mydumper-config
+          readOnly: true
+      restartPolicy: Never
+      volumes:
+      - name: mydumper-config
+        configMap:
+          name: mydumper-config
+  backoffLimit: 4

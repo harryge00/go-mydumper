@@ -20,6 +20,13 @@ $make build
 $./bin/mydumper   -h
 $./bin/myloader   -h
 ```
+构建镜像:
+```
+export GOOS=linux 
+export GOARCH=amd64 
+make build 
+docker build -t hyge/mydumper .
+```
 
 ## 配置说明
 使用minio存储的配置部分如下：
@@ -39,6 +46,23 @@ useSSL = true
 | accesskey      | minio 登录用户名| 字符串 |
 | secretkey      | minio 登录密码| 字符串 |
 | useSSL      | 是否使用SSL| 布尔 |
+
+
+## 运行
+1. 二进制运行
+```
+./bin/go-mydumper -c conf/mydumper.ini.sample
+```
+2. docker 运行
+```
+docker run -d -v $PWD/conf/mydumper.ini.sample:/mydumper.ini hyge/mydumper go-mydumper -c  /mydumper.ini
+```
+3. K8s 运行
+需要先部署mysql, 修改configmap中mysql地址
+```
+kubectl apply -f example/configmap.yaml
+kubectl apply -f example/backup-job.yaml
+```
 
 ### mydumper
 

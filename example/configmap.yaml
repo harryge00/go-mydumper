@@ -1,0 +1,60 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: mydumper-config
+  namespace: default
+data:
+  mydumper.ini: |
+    [mysql]
+    # The host to connect to
+    host = mysql
+    # TCP/IP port to conect to
+    port = 3306
+    # Username with privileges to run the dump
+    user = root
+    # User password
+    password = 123456
+    # Database to dump
+    database = test
+    # Directory to dump files to
+    outdir = ./dumper-sql
+    # Split tables into chunks of this output file size. This value is in MB
+    chunksize = 128
+    # Session variables, split by ;
+    # vars= "xx=xx;xx=xx;"
+    vars= ""
+    
+    # Dump some specific tables
+    # table = t1,t2
+    
+    # Use this to use regexp to control what databases to export. These are optional
+    [database]
+    # regexp = ^(mysql|sys|information_schema|performance_schema)$
+    # As the used regexp lib does not allow for lookarounds, you may use this to invert the whole regexp
+    # This option should be refactored as soon as a GPLv3 compliant go-pcre lib is found
+    # invert_regexp = on
+    
+    # Use this to restrict exported data. These are optional
+    [where]
+    # sample_table1 = created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+    # sample_table2 = created_at >= DATE_SUB(NOW(), INTERVAL 7 DAY)
+    
+    # Use this to override value returned from tables. These are optional
+    [select]
+    # user.salt = 'reset salt of all system users'
+    # user.password = 'reset password of all system users'
+    
+    # customer.first_name = CONCAT('Bohu', id)
+    # customer.last_name = 'Last'
+    
+    # Use this to ignore the column to dump.
+    [filter]
+    # table1.column1 = ignore
+    
+    [storage]
+    storagetype = minio
+    endpoint = play.minio.io:9000
+    accesskey = Q3AM3UQ867SPQQA43P2F
+    secretkey = zuf+tfteSlswRu7BJ86wekitnifILbZam1KYY3TG
+    bucket = test-backup
+    useSSL = true
